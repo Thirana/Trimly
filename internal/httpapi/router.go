@@ -1,19 +1,31 @@
 package httpapi
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/thirana/url-shortener/internal/shortener"
+	"github.com/thirana/url-shortener/internal/store"
+)
 
 func NewRouter() *gin.Engine {
-	// gin.New() creates a router without default middleware.
-	// We attach only what we need.
 	r := gin.New()
-
-	// Logger middleware logs requests.
-	// Recovery middleware prevents panics from crashing the process.
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 
-	// Routes
 	r.GET("/health", Health)
+
+	// Dependencies (manual DI)
+	mem := store.NewMemoryStore()
+	svc := shortener.NewService(mem)
+	links := NewLinksHandler(svc)
+
+	v1 := r.Group("/v1")
+	{
+		v1.POST("/links", links.Create)
+	}
+
+	// Redirect endpoint (public)
+	// Bind URI uses uri tags; Gin shows this pattern in its docs. ([gin Bind URI](https://gin-gonic.com/en/docs/examples/bind-uri/?utm_source=chatgpt.com))
+	r.GET("/:code", links.Redirect)
 
 	return r
 }

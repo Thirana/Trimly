@@ -1,4 +1,4 @@
-module github.com/thirana/url-shortner
+module github.com/thirana/url-shortener
 
 go 1.25.0
 

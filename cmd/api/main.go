@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
-	"github.com/thirana/url-shortner/internal/httpapi"
+	"github.com/thirana/url-shortener/internal/httpapi"
 )
 
 func main() {
