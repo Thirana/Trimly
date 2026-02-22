@@ -16,6 +16,8 @@ func NewMemoryStore() *MemoryStore {
 	}
 }
 
+// Save matches the LinkStore interface, so *MemoryStore satisfies LinkStore.
+// Pointer receivers mean *MemoryStore (not MemoryStore) implements the interface.
 func (m *MemoryStore) Save(_ context.Context, link Link) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -23,6 +25,8 @@ func (m *MemoryStore) Save(_ context.Context, link Link) error {
 	return nil
 }
 
+// Get matches the LinkStore interface, so *MemoryStore satisfies LinkStore.
+// This is how the service can accept any store implementation.
 func (m *MemoryStore) Get(_ context.Context, code string) (Link, bool, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
