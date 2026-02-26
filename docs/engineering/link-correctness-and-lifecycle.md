@@ -6,46 +6,48 @@ Capture the domain rules that make short-link behavior correct, predictable, and
 
 ## Current implementation
 
-1. Create flow validates `long_url` as `http/https` with host required.
-2. Short code is generated with `crypto/rand` and URL-safe encoding.
-3. Resolve flow returns:
-- success with redirect target when found
-- not found when code is missing
-4. Redirect behavior uses `302 Found`.
+1. Create validates and normalizes `long_url` as `http/https` with host required.
+2. Optional `expires_at` is accepted on create.
+3. Create rejects non-future `expires_at`.
+4. Create is idempotent by normalized intent key:
+- normalized `long_url`
+- normalized `expires_at` (or no-expiry)
+5. Short code allocation retries collisions with bounded attempts (`5`).
+6. Resolve returns:
+- redirect target on active link
+- not found for missing code
+- not found for expired code (via domain `ErrExpired`)
+7. Redirect behavior uses `302 Found`.
 
 ## Current code references
 
 1. `internal/shortener/service.go`
 2. `internal/shortener/validate.go`
 3. `internal/shortener/code.go`
-4. `internal/httpapi/links_handlers.go`
+4. `internal/store/link_store.go`
+5. `internal/store/memory_store.go`
+6. `internal/httpapi/links_handlers.go`
 
-## Phase 2 target decisions
+## Domain error taxonomy
 
-1. Collision handling:
-- bounded retries for generated code collisions
-- explicit failure mode when retries are exhausted
-2. Idempotency:
-- define duplicate-create semantics (same input -> same logical result)
-- ensure deterministic behavior for client retries
-3. Expiry rules:
-- add optional `expires_at`
-- define behavior for expired link resolution
-4. Error taxonomy:
-- add domain errors for collision, expiry, and conflict where needed
+1. `ErrInvalidURL`
+2. `ErrNotFound`
+3. `ErrExpired`
+4. `ErrCollision`
 
 ## Non-negotiable invariants
 
-1. A redirect code maps to at most one active target at a time.
-2. Invalid URLs never reach storage.
-3. Not-found and expired behavior must be explicit and consistently tested.
-4. API behavior for retries must be deterministic.
+1. Invalid URLs never reach storage.
+2. A create request with the same normalized intent returns the same logical link.
+3. A code is not overwritten on collision; collisions retry with bounded attempts.
+4. Expired links are not redirectable.
+5. Missing and expired redirects are indistinguishable at HTTP level (`404 not_found`).
 
-## Testing direction
+## Testing coverage
 
-1. Table-driven service tests for validation, collision, idempotency, and expiry.
-2. Handler tests for HTTP status and error envelope consistency.
-3. Add race tests when concurrency is introduced in lifecycle flows.
+1. Service tests cover URL normalization, idempotency, collision retries/exhaustion, and expiry handling.
+2. Handler tests cover create success, duplicate create behavior, invalid input envelope, and expired redirect behavior.
+3. Race tests run for updated concurrent store behavior.
 
 ## Related plans
 

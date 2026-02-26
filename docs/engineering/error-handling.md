@@ -13,32 +13,35 @@
 }
 ```
 
-2. Domain errors from service are mapped to HTTP status:
+2. Domain errors from service are mapped to stable HTTP responses.
+
+3. Create (`POST /v1/links`) mapping:
 - `ErrInvalidURL` -> `400 invalid_url`
-- `ErrNotFound` -> `404 not_found`
+- `ErrExpired` -> `400 invalid_expiry`
+- `ErrCollision` -> `409 conflict`
 - unknown errors -> `500 internal`
-3. Common formatting is centralized via `jsonError`.
+
+4. Resolve (`GET /:code`) mapping:
+- `ErrNotFound` -> `404 not_found`
+- `ErrExpired` -> `404 not_found` (intentional non-disclosure)
+- unknown errors -> `500 internal`
+
+5. Binder failures still return `400 bad_request` with binder message.
+
+6. Common JSON formatting is centralized via `jsonError`.
 
 ## Why this matters
 
 1. Consistent error shape keeps client handling simple.
 2. Domain-to-HTTP mapping keeps transport concerns out of business logic.
 3. Centralized formatting reduces drift across handlers.
+4. Expired links remain non-enumerable from HTTP responses.
 
 ## Current code references
 
 1. `internal/httpapi/errors.go`
 2. `internal/httpapi/links_handlers.go`
 3. `internal/shortener/service.go`
-
-## Gaps and next steps
-
-1. Some bad-request paths still return raw binder errors directly.
-2. There is no typed error taxonomy beyond a small set of sentinel errors.
-3. Add more explicit domain error categories in Phase 2:
-- collision
-- expiry
-- conflict/idempotency behavior
 
 ## Staff-level practice to keep
 

@@ -8,7 +8,12 @@ Track how performance claims are validated and which optimizations are accepted.
 
 1. No formal benchmark suite yet.
 2. No load-test harness committed yet.
-3. Basic redirect path is implemented and intentionally simple.
+3. Redirect path is still intentionally simple and minimal.
+4. Phase 2 introduced correctness logic mainly on create path:
+- idempotency lookup by intent
+- bounded collision retries
+- expiry checks
+5. No performance gain claims are made for Phase 2.
 
 ## Principles
 

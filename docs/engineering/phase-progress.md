@@ -12,23 +12,35 @@ Update it whenever phase scope or completion status changes.
 
 ## Phase status
 
-1. Phase 2 (correctness + reliability): `planned`
+1. Phase 2 (correctness + reliability): `in_progress`
 2. Phase 3 (persistence + migrations): `planned`
 3. Phase 4 (Redis hot path + load tests): `planned`
 4. Phase 5 (auth + profiles + link management): `planned`
 5. Phase 6 (abuse protection + observability + async analytics): `planned`
 6. Phase 7 (performance engineering + deployment hardening): `planned`
 
-## What is implemented today (pre-phase baseline)
+## Phase 2 changelog
+
+1. 2026-02-26:
+- Added collision retries with bounded attempts and explicit `ErrCollision`.
+- Added idempotent create behavior by normalized intent (`long_url` + optional `expires_at`).
+- Added optional expiry semantics and expired-link handling.
+- Added domain error mapping updates (`invalid_expiry`, `conflict`, expired-as-not-found).
+- Added service and handler tests for collision, idempotency, expiry, and error envelopes.
+- Added race test execution as part of verification.
+
+## What is implemented today
 
 1. Gin API with:
 - `GET /health`
 - `POST /v1/links`
 - `GET /:code`
 2. In-memory link storage behind `LinkStore` interface.
-3. URL validation in service layer (`http/https` + host).
-4. Basic JSON error envelope and domain error mapping for invalid URL and not found.
-5. Random URL-safe short-code generation.
+3. URL validation + normalization in service layer.
+4. Stable JSON error envelope and domain error mapping.
+5. Random URL-safe short-code generation with collision retries.
+6. Idempotent create semantics.
+7. Optional expiry (`expires_at`) and expired redirect protection.
 
 ## How to update this file
 

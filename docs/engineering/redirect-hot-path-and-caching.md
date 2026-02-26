@@ -7,9 +7,10 @@ Define how redirect performance is engineered while preserving correctness.
 ## Current implementation
 
 1. Redirect route is `GET /:code`.
-2. Resolve path uses in-memory store lookup.
-3. On hit, handler issues `302` redirect.
-4. On miss, handler returns `404` JSON error.
+2. Resolve path uses in-memory store lookup by code.
+3. Service performs a lightweight expiry check after lookup.
+4. On active link hit, handler issues `302` redirect.
+5. On miss or expired link, handler returns `404` JSON error.
 
 ## Current code references
 
@@ -17,6 +18,12 @@ Define how redirect performance is engineered while preserving correctness.
 2. `internal/httpapi/links_handlers.go`
 3. `internal/shortener/service.go`
 4. `internal/store/memory_store.go`
+
+## Hot path correctness notes
+
+1. Expired links intentionally map to the same `404 not_found` response as missing links.
+2. Redirect path avoids create-path concerns (collision retries/idempotency logic is create-only).
+3. Store lookup remains mutex-protected and race-safe.
 
 ## Phase 4 target architecture
 

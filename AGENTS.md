@@ -10,6 +10,8 @@ If user instructions conflict with this file, follow the user.
 3. `internal/shortener` is business/domain logic only (no Gin imports).
 4. `internal/store` is storage interfaces and implementations (swappable backends).
 5. `docs/engineering` is the canonical engineering-notes set for this repo and must track real implementation decisions.
+6. `docs/go-and-gin` is the canonical Go and Gin concept reference for patterns currently used in code.
+7. `docs/setup` is the canonical local setup and endpoint usage reference.
 
 Local rules also exist in:
 
@@ -18,11 +20,14 @@ Local rules also exist in:
 3. `internal/shortener/AGENTS.md`
 4. `internal/store/AGENTS.md`
 
-Engineering notes are in:
+Core documentation indexes are in:
 
-1. `docs/engineering/README.md`
-2. `docs/engineering/phase-progress.md`
-3. `docs/engineering/decisions/README.md`
+1. `docs/README.md`
+2. `docs/engineering/README.md`
+3. `docs/engineering/phase-progress.md`
+4. `docs/engineering/decisions/README.md`
+5. `docs/go-and-gin/README.md`
+6. `docs/setup/README.md`
 
 ## Non-negotiable engineering rules
 
@@ -80,14 +85,17 @@ Engineering docs maintenance is required:
 
 1. If a change modifies architecture, validation, error flow, persistence, security, auth, authorization, or observability behavior, update the relevant file(s) in `docs/engineering` in the same change.
 2. If phase scope or sequence changes, update `docs/plan` in the same change.
-3. Do not leave engineering docs stale after implementation changes.
-4. When work affects collision handling, idempotency, expiry, redirect hot path, caching, or performance claims, update:
+3. If implementation introduces, removes, or changes Go/Gin concepts used by the codebase, update the relevant file(s) in `docs/go-and-gin` in the same change.
+4. If setup steps, environment variables, endpoints, request/response contracts, or local testing flow change, update the relevant file(s) in `docs/setup` in the same change.
+5. Do not leave docs stale after implementation changes.
+6. For every active development phase, include a docs sync pass across `docs/engineering`, `docs/plan`, `docs/go-and-gin`, and `docs/setup` before closing the phase.
+7. When work affects collision handling, idempotency, expiry, redirect hot path, caching, or performance claims, update:
 - `docs/engineering/link-correctness-and-lifecycle.md`
 - `docs/engineering/redirect-hot-path-and-caching.md`
 - `docs/engineering/performance-and-load-engineering.md`
-5. Keep `docs/engineering/phase-progress.md` aligned with real phase status.
-6. When a key staff-level technical decision is made or changed, add/update an ADR in `docs/engineering/decisions` in the same change.
-7. Never silently change a previously accepted major decision; add a new ADR that supersedes the old one.
+8. Keep `docs/engineering/phase-progress.md` aligned with real phase status.
+9. When a key staff-level technical decision is made or changed, add/update an ADR in `docs/engineering/decisions` in the same change.
+10. Never silently change a previously accepted major decision; add a new ADR that supersedes the old one.
 
 Before finishing any code change:
 
@@ -102,3 +110,4 @@ Done criteria:
 3. Error handling is consistent and safe.
 4. Redirect path remains lean.
 5. Security/performance impact is considered.
+6. Documentation in `docs/engineering`, `docs/plan`, `docs/go-and-gin`, and `docs/setup` is aligned with implementation.

@@ -23,10 +23,9 @@ func (h *LinksHandler) Create(c *gin.Context) {
 		return
 	}
 
-	link, err := h.svc.Create(c.Request.Context(), req.LongURL)
+	link, created, err := h.svc.Create(c.Request.Context(), req.LongURL, req.ExpiresAt)
 	if err != nil {
-		if err == shortener.ErrInvalidURL {
-			jsonError(c, http.StatusBadRequest, "invalid_url", "URL must be a valid http/https URL")
+		if mapCreateDomainError(c, err) {
 			return
 		}
 		jsonError(c, http.StatusInternalServerError, "internal", "something went wrong")
@@ -40,11 +39,16 @@ func (h *LinksHandler) Create(c *gin.Context) {
 	}
 
 	resp := CreateLinkResponse{
-		Code:     link.Code,
-		ShortURL: baseURL + "/" + link.Code,
-		LongURL:  link.LongURL,
+		Code:      link.Code,
+		ShortURL:  baseURL + "/" + link.Code,
+		LongURL:   link.LongURL,
+		ExpiresAt: link.ExpiresAt,
 	}
-	c.JSON(http.StatusCreated, resp)
+	status := http.StatusOK
+	if created {
+		status = http.StatusCreated
+	}
+	c.JSON(status, resp)
 }
 
 func (h *LinksHandler) Redirect(c *gin.Context) {
@@ -58,8 +62,7 @@ func (h *LinksHandler) Redirect(c *gin.Context) {
 
 	link, err := h.svc.Resolve(c.Request.Context(), uri.Code)
 	if err != nil {
-		if err == shortener.ErrNotFound {
-			jsonError(c, http.StatusNotFound, "not_found", "code not found")
+		if mapResolveDomainError(c, err) {
 			return
 		}
 		jsonError(c, http.StatusInternalServerError, "internal", "something went wrong")

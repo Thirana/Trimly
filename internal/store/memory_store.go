@@ -3,16 +3,19 @@ package store
 import (
 	"context"
 	"sync"
+	"time"
 )
 
 type MemoryStore struct {
-	mu    sync.RWMutex
-	links map[string]Link
+	mu           sync.RWMutex
+	links        map[string]Link
+	intentToCode map[string]string
 }
 
 func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{
-		links: make(map[string]Link),
+		links:        make(map[string]Link),
+		intentToCode: make(map[string]string),
 	}
 }
 
@@ -21,7 +24,22 @@ func NewMemoryStore() *MemoryStore {
 func (m *MemoryStore) Save(_ context.Context, link Link) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.links[link.Code] = link
+
+	if _, exists := m.links[link.Code]; exists {
+		return ErrCodeExists
+	}
+
+	key := intentKey(link.LongURL, link.ExpiresAt)
+	if existingCode, exists := m.intentToCode[key]; exists {
+		if _, exists := m.links[existingCode]; exists {
+			return ErrIntentExists
+		}
+		// Defensive cleanup if maps become inconsistent.
+		delete(m.intentToCode, key)
+	}
+
+	m.links[link.Code] = cloneLink(link)
+	m.intentToCode[key] = link.Code
 	return nil
 }
 
@@ -31,5 +49,44 @@ func (m *MemoryStore) Get(_ context.Context, code string) (Link, bool, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	link, ok := m.links[code]
-	return link, ok, nil
+	if !ok {
+		return Link{}, false, nil
+	}
+	return cloneLink(link), true, nil
+}
+
+func (m *MemoryStore) FindByIntent(_ context.Context, longURL string, expiresAt *time.Time) (Link, bool, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	code, ok := m.intentToCode[intentKey(longURL, expiresAt)]
+	if !ok {
+		return Link{}, false, nil
+	}
+	link, ok := m.links[code]
+	if !ok {
+		return Link{}, false, nil
+	}
+	return cloneLink(link), true, nil
+}
+
+func intentKey(longURL string, expiresAt *time.Time) string {
+	if expiresAt == nil {
+		return longURL + "\x00no-expiry"
+	}
+	return longURL + "\x00" + expiresAt.UTC().Format(time.RFC3339Nano)
+}
+
+func cloneLink(link Link) Link {
+	linkCopy := link
+	linkCopy.ExpiresAt = cloneTime(link.ExpiresAt)
+	return linkCopy
+}
+
+func cloneTime(t *time.Time) *time.Time {
+	if t == nil {
+		return nil
+	}
+	v := t.UTC()
+	return &v
 }
