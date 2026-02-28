@@ -13,28 +13,42 @@ This prevents external modules from importing these packages directly.
 ## Implicit interface implementation
 
 `internal/store/link_store.go` defines `LinkStore`.
-`*MemoryStore` in `internal/store/memory_store.go` implements it without an `implements` keyword.
+Both store implementations satisfy it without an `implements` keyword:
 
-Key benefit: the service depends on behavior (`LinkStore`), not storage concrete type.
+1. `*MemoryStore` in `internal/store/memory_store.go`
+2. `*postgres.Store` in `internal/store/postgres/store.go`
 
-## Constructor-style dependency injection
+Key benefit: service code depends on behavior (`LinkStore`), not concrete backend.
 
-`internal/httpapi/router.go` wires dependencies manually:
+## Composition root in `cmd/api`
 
-1. `mem := store.NewMemoryStore()`
-2. `svc := shortener.NewService(mem)`
-3. `links := NewLinksHandler(svc)`
+Dependency composition now happens in `cmd/api/main.go`:
 
-This keeps router wiring explicit and testable.
+1. choose store implementation based on `DATABASE_URL`
+2. construct `shortener.Service`
+3. construct `httpapi.LinksHandler`
+4. pass handler into `httpapi.NewRouter(links)`
+
+This keeps HTTP routing separate from backend selection.
+
+## Environment bootstrapping with `godotenv`
+
+`cmd/api/main.go` loads `.env` via `godotenv.Load(".env")` at startup for local runs.
+
+Behavior:
+
+1. Missing `.env` is non-fatal.
+2. Existing process environment variables keep precedence.
+3. Cloud deployments can rely on provider-managed env vars without `.env` files.
 
 ## Pointer receiver methods
 
-`Service` and `MemoryStore` methods use pointer receivers (`func (s *Service) ...`, `func (m *MemoryStore) ...`).
+`Service`, `MemoryStore`, and `postgres.Store` methods use pointer receivers.
 
 Why it matters:
 
 1. Avoids copying structs.
-2. Allows internal mutation (`MemoryStore` map + mutex).
+2. Allows internal mutation/resource management.
 3. Ensures method sets align with injected pointer values.
 
 ## `context.Context` propagation
@@ -44,7 +58,7 @@ Handlers pass request context into the service:
 1. `h.svc.Create(c.Request.Context(), req.LongURL, req.ExpiresAt)`
 2. `h.svc.Resolve(c.Request.Context(), uri.Code)`
 
-Service/store APIs accept `context.Context` so cancellation and deadlines can be enforced later without redesign.
+Service/store APIs accept `context.Context` so cancellation and deadlines can be enforced consistently.
 
 ## Sentinel errors and HTTP mapping
 
@@ -55,19 +69,17 @@ Service-level sentinel errors:
 3. `shortener.ErrExpired`
 4. `shortener.ErrCollision`
 
-Handlers map these to stable HTTP responses.
+Store-level sentinel errors:
 
-## URL normalization for idempotency
+1. `store.ErrCodeExists`
+2. `store.ErrIntentExists`
 
-Service normalizes URLs using `net/url` before persistence and idempotency checks.
+Handlers map domain errors to stable HTTP responses.
 
-Current normalization includes:
+## URL normalization and shared intent keys
 
-1. trim spaces
-2. enforce `http/https` + host
-3. lowercase scheme and host
-4. remove default ports (`80`/`443`)
-5. normalize empty path to `/`
+Idempotency relies on normalized URL + normalized expiry.
+`internal/store/intent.go` provides shared `BuildIntentKey` so all backends use the same key shape.
 
 ## Deterministic retry and injectable dependencies
 
@@ -77,11 +89,7 @@ Service uses bounded collision retries and injectable functions for testability:
 2. `now` function field for deterministic expiry tests.
 3. bounded `maxAttempts` for collision exhaustion behavior.
 
-## Concurrency-safe in-memory store
+## Concurrency safety across stores
 
-`MemoryStore` protects in-memory maps with `sync.RWMutex` and tracks:
-
-1. `code -> link`
-2. `intentKey -> code`
-
-This enforces code uniqueness and create-intent idempotency safely under concurrent access.
+1. In-memory store uses `sync.RWMutex` around maps.
+2. Postgres store relies on DB constraints and transactional write behavior.

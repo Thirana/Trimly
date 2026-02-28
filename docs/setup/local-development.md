@@ -4,6 +4,9 @@
 
 1. Go toolchain installed.
 2. Version compatible with `go.mod` (`go 1.25.0`).
+3. Optional but recommended for Phase 3 DB path:
+- `psql` CLI
+- `migrate` CLI (`golang-migrate`)
 
 ## Install dependencies
 
@@ -11,7 +14,25 @@
 go mod download
 ```
 
-## Run the API
+## Local `.env` setup
+
+Create `.env` in repo root:
+
+```bash
+cat > .env <<'EOF'
+PORT=8080
+BASE_URL=http://localhost:8080
+DATABASE_URL=postgres://<user>:<password>@<host>/<db>?sslmode=require
+REDIS_URL=redis://default:password@<host>:6379
+EOF
+```
+
+Notes:
+
+1. App auto-loads `.env` on startup using `github.com/joho/godotenv`.
+2. Existing environment variables already set in the shell take precedence over `.env`.
+
+## Run the API (in-memory mode)
 
 ```bash
 go run ./cmd/api
@@ -20,7 +41,42 @@ go run ./cmd/api
 Server defaults:
 
 1. Listens on `:8080` when `PORT` is not set.
-2. Uses in-memory storage (`MemoryStore`), so data is lost on restart.
+2. Uses in-memory storage when `DATABASE_URL` is not set.
+
+## Run the API (Postgres mode)
+
+```bash
+DATABASE_URL='postgres://<user>:<password>@<host>/<db>?sslmode=require' \
+BASE_URL='http://localhost:8080' \
+PORT=8080 \
+go run ./cmd/api
+```
+
+Behavior:
+
+1. App chooses Postgres store when `DATABASE_URL` is set.
+2. Startup pings DB and fails fast if unreachable.
+3. You can use `.env` without running `source` manually.
+
+## Migration workflow (Phase 3)
+
+1. Install migration CLI:
+
+```bash
+go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+```
+
+2. Apply migrations:
+
+```bash
+migrate -path internal/store/postgres/migrations -database "$DATABASE_URL" up
+```
+
+3. Roll back one migration:
+
+```bash
+migrate -path internal/store/postgres/migrations -database "$DATABASE_URL" down 1
+```
 
 ## Environment variables
 
@@ -34,9 +90,16 @@ Server defaults:
 - Default: `http://localhost:8080`
 - Example: `BASE_URL=http://localhost:9090`
 
-3. `GIN_MODE`
+3. `DATABASE_URL`
+- Purpose: enables Postgres store path when set.
+- Example: `postgres://user:pass@host:5432/dbname?sslmode=require`
+
+4. `REDIS_URL`
+- Purpose: reserved for Phase 4 cache integration.
+
+5. `GIN_MODE`
 - Note: current code calls `gin.SetMode(gin.ReleaseMode)` on startup, so release mode is forced by code.
-- Practical impact: setting `GIN_MODE` alone will not switch runtime mode unless the code path changes.
+- Practical impact: setting `GIN_MODE` alone will not switch runtime mode unless code path changes.
 
 ## Quick health check
 

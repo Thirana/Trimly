@@ -12,8 +12,8 @@ Update it whenever phase scope or completion status changes.
 
 ## Phase status
 
-1. Phase 2 (correctness + reliability): `in_progress`
-2. Phase 3 (persistence + migrations): `planned`
+1. Phase 2 (correctness + reliability): `done`
+2. Phase 3 (persistence + migrations): `in_progress`
 3. Phase 4 (Redis hot path + load tests): `planned`
 4. Phase 5 (auth + profiles + link management): `planned`
 5. Phase 6 (abuse protection + observability + async analytics): `planned`
@@ -29,18 +29,30 @@ Update it whenever phase scope or completion status changes.
 - Added service and handler tests for collision, idempotency, expiry, and error envelopes.
 - Added race test execution as part of verification.
 
+## Phase 3 changelog
+
+1. 2026-02-28 (scaffold milestone):
+- Added Postgres store skeleton (`internal/store/postgres`) implementing `LinkStore`.
+- Added initial migration scaffold for links table and required indexes.
+- Added `DATABASE_URL`-driven runtime store selection (Postgres or in-memory fallback).
+- Added startup DB ping fail-fast and graceful shutdown wiring in `cmd/api/main.go`.
+- Refactored router wiring so dependency composition happens in `cmd/api`.
+
 ## What is implemented today
 
 1. Gin API with:
 - `GET /health`
 - `POST /v1/links`
 - `GET /:code`
-2. In-memory link storage behind `LinkStore` interface.
+2. Storage implementations:
+- in-memory store
+- Postgres store skeleton (enabled when `DATABASE_URL` is set)
 3. URL validation + normalization in service layer.
 4. Stable JSON error envelope and domain error mapping.
 5. Random URL-safe short-code generation with collision retries.
 6. Idempotent create semantics.
 7. Optional expiry (`expires_at`) and expired redirect protection.
+8. Runtime graceful shutdown with timeout.
 
 ## How to update this file
 

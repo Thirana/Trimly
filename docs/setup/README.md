@@ -6,5 +6,9 @@ This folder documents how to run the project locally and test available endpoint
 
 1. `docs/setup/local-development.md`
 2. `docs/setup/api-endpoints.md`
+3. `docs/setup/deployment-targets.md`
+4. `docs/setup/environment-matrix.md`
+5. `docs/setup/deployment-workflow.md`
+6. `docs/setup/neon-postgres-migration-runbook.md`
 
-Keep this folder synced whenever setup steps, environment variables, or endpoint contracts change.
+Keep this folder synced whenever setup steps, environment variables, endpoint contracts, or deployment targets change.

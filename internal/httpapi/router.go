@@ -2,21 +2,14 @@ package httpapi
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/thirana/url-shortener/internal/shortener"
-	"github.com/thirana/url-shortener/internal/store"
 )
 
-func NewRouter() *gin.Engine {
+func NewRouter(links *LinksHandler) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 
 	r.GET("/health", Health)
-
-	// Dependencies (manual DI)
-	mem := store.NewMemoryStore()
-	svc := shortener.NewService(mem)
-	links := NewLinksHandler(svc)
 
 	v1 := r.Group("/v1")
 	{

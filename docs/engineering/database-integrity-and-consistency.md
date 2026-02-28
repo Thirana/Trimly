@@ -2,42 +2,50 @@
 
 ## Current implementation status
 
-1. Persistence is currently in-memory only.
-2. `LinkStore` interface decouples business logic from storage backend.
-3. `MemoryStore` uses `sync.RWMutex` and map for thread-safe access.
-4. Writes are simple overwrite-by-code semantics.
+1. `LinkStore` interface decouples business logic from storage backend.
+2. `MemoryStore` remains available for local/no-DB runs.
+3. Postgres store skeleton now exists in `internal/store/postgres`.
+4. Initial SQL migration scaffold exists in `internal/store/postgres/migrations`.
+5. Runtime store selection is environment-driven:
+- `DATABASE_URL` set -> Postgres path
+- `DATABASE_URL` unset -> in-memory path
 
-## Why this is a solid starting point
+## Why this is a solid progression
 
-1. Interface-first design enables backend replacement with minimal service changes.
-2. Mutex-protected map provides predictable behavior for local development.
-3. In-memory store keeps iteration fast while domain rules are still being shaped.
+1. Interface-first design keeps service logic stable while backends evolve.
+2. Memory fallback preserves fast local iteration when DB is not required.
+3. Postgres path introduces durable constraints and persistence readiness.
+4. Versioned migrations establish reproducible schema evolution.
 
 ## Current code references
 
 1. `internal/store/link_store.go`
-2. `internal/store/memory_store.go`
-3. `internal/shortener/service.go`
+2. `internal/store/intent.go`
+3. `internal/store/memory_store.go`
+4. `internal/store/postgres/store.go`
+5. `internal/store/postgres/migrations/000001_create_links_table.up.sql`
+6. `internal/store/postgres/migrations/000001_create_links_table.down.sql`
+7. `cmd/api/main.go`
 
-## Integrity gaps to close (Phase 2 and Phase 3)
+## Integrity guarantees now covered
 
-1. No collision-safe uniqueness guarantee beyond current map overwrite behavior.
-2. No durable storage, constraints, or migrations.
-3. No transaction boundaries because there is no database yet.
+1. App-layer idempotency semantics shared across store implementations via `BuildIntentKey`.
+2. Postgres schema constraints include:
+- unique `code`
+- unique `intent_key`
+3. Store-level duplicate writes map to explicit app errors:
+- `ErrCodeExists`
+- `ErrIntentExists`
 
-## Planned direction
+## Remaining Phase 3 work
 
-1. Phase 2:
-- add bounded collision handling and conflict semantics
-- define idempotency behavior
-2. Phase 3:
-- Postgres-backed store
-- migrations
-- unique index on `code`
-- indexes for planned query paths
+1. Add integration tests against disposable Postgres.
+2. Add migration verification tests (`up` from empty DB and rollback safety).
+3. Decide when to make Postgres the default runtime path for all environments.
+4. Add stronger update semantics (`updated_at` maintenance) when write/update flows expand.
 
 ## Staff-level practice to keep
 
-1. Put invariants in storage constraints, not only in application code.
+1. Put invariants in DB constraints, not only in application code.
 2. Keep repository interfaces stable while swapping implementations.
 3. Treat migrations as first-class, versioned code.
