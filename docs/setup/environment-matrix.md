@@ -22,7 +22,30 @@ This matrix defines runtime configuration for local and cloud environments.
 
 5. `REDIS_URL`
 - Required when Redis cache path is enabled (Phase 4).
-- Value source: Redis Cloud endpoint.
+- Value source: Upstash Redis endpoint (TLS `rediss://` URL from Upstash console).
+
+6. `REDIS_ENABLED`
+- Controls whether Redis cache path is active.
+- Default: `false`.
+- Set to `true` only when `REDIS_URL` is configured and reachable.
+- Runtime behavior: app performs startup Redis `PING` fail-fast check when enabled.
+
+7. `REDIS_POSITIVE_TTL`
+- TTL for positive cache keys (`v1:url:short:{code}`).
+- Default: `10m`.
+
+8. `REDIS_MISS_TTL`
+- TTL for negative cache keys (`v1:url:miss:{code}`).
+- Default: `45s`.
+
+9. `REDIS_CONNECT_TIMEOUT`
+- Startup connectivity timeout for Redis `PING`.
+- Default: `3s`.
+
+10. `REDIS_OP_TIMEOUT`
+- Runtime operation timeout for Redis calls.
+- Default: `150ms`.
+- Backward compatibility: if unset, app falls back to `REDIS_TIMEOUT` when present.
 
 ## Frontend (Next.js)
 
@@ -51,7 +74,12 @@ This matrix defines runtime configuration for local and cloud environments.
 PORT=8080
 BASE_URL=http://localhost:8080
 DATABASE_URL=postgres://user:pass@host:5432/dbname?sslmode=require
-REDIS_URL=redis://default:password@host:6379
+REDIS_URL=rediss://default:password@host:6379
+REDIS_ENABLED=true
+REDIS_POSITIVE_TTL=10m
+REDIS_MISS_TTL=45s
+REDIS_CONNECT_TIMEOUT=3s
+REDIS_OP_TIMEOUT=150ms
 ```
 
 ## Example frontend `.env.local`

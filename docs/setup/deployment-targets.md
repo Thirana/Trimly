@@ -6,7 +6,7 @@ The goal is low operational overhead, clean developer experience, and production
 ## Selected services
 
 1. Postgres: `Neon`
-2. Redis: `Redis Cloud`
+2. Redis: `Upstash Redis`
 3. Go backend hosting: `Render`
 4. Next.js frontend hosting: `Vercel`
 
@@ -17,10 +17,11 @@ The goal is low operational overhead, clean developer experience, and production
 - Managed Postgres with simple connection workflow.
 - Good fit for Phase 3 (durable persistence + migrations).
 
-1. Redis Cloud
+1. Upstash Redis
 
-- Official Redis managed provider.
-- Good fit for Phase 4 redirect hot-path cache.
+- Larger free-tier memory footprint for learning-phase cache experiments.
+- Good fit for Phase 4 redirect hot-path cache with standard Redis protocol support.
+- Acceptable tradeoff for this project: eventual-consistency model and command-based quotas.
 
 1. Render
 
@@ -43,7 +44,7 @@ The goal is low operational overhead, clean developer experience, and production
 
 - Backend on Render.
 - Postgres on Neon.
-- Redis on Redis Cloud.
+- Redis on Upstash.
 - Frontend on Vercel.
 
 1. `Optional staging` (later)
@@ -68,4 +69,3 @@ The goal is low operational overhead, clean developer experience, and production
 2. `docs/setup/deployment-workflow.md`
 3. `docs/plan/phase-3-persistence-migrations.md`
 4. `docs/plan/phase-4-redis-hot-path-load-tests.md`
-

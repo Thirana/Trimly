@@ -17,8 +17,9 @@ Each ADR explains context, decision, consequences, and implementation status.
 3. `ADR-0003-redirect-contract-and-302-default.md` (`accepted`)
 4. `ADR-0004-validation-at-http-boundary-and-service-layer.md` (`accepted`)
 5. `ADR-0005-phase-2-correctness-contract.md` (`accepted`)
-6. `ADR-0006-initial-platform-provider-baseline.md` (`accepted`)
+6. `ADR-0006-initial-platform-provider-baseline.md` (`superseded`)
 7. `ADR-0007-phase-3-store-wiring-and-postgres-skeleton.md` (`accepted`)
+8. `ADR-0008-cache-provider-switch-to-upstash.md` (`accepted`)
 
 ## Rules
 

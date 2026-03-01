@@ -111,3 +111,30 @@ Why this pattern:
 1. Avoids polluting shared tables.
 2. Allows migration verification (`up` -> `down` -> `up`) safely.
 3. Keeps tests repeatable even against a managed DB target.
+
+## Fail-fast env parsing with typed defaults
+
+`cmd/api/main.go` parses Redis runtime env values at startup into typed config:
+
+1. booleans via `strconv.ParseBool` (`REDIS_ENABLED`)
+2. durations via `time.ParseDuration` (`REDIS_POSITIVE_TTL`, `REDIS_MISS_TTL`, `REDIS_CONNECT_TIMEOUT`, `REDIS_OP_TIMEOUT`)
+3. explicit validation (`> 0` durations, `REDIS_URL` required when enabled)
+
+Why this pattern:
+
+1. catches bad env values at startup instead of runtime hot path
+2. keeps behavior tunable without code changes
+3. preserves safe rollback by disabling cache through config
+
+## Startup connectivity fail-fast checks
+
+`cmd/api/main.go` validates external dependencies before serving traffic:
+
+1. Postgres path: pool creation + startup `Ping`.
+2. Redis path (when enabled): URL parse + startup `PING`.
+
+Why this pattern:
+
+1. invalid URLs fail at boot, not on first request
+2. misconfigured credentials are detected early
+3. startup logs clearly show dependency readiness

@@ -5,7 +5,7 @@ This file captures a simple, repeatable deployment path for this project.
 ## Provisioning order
 
 1. Create Neon project and Postgres database.
-2. Create Redis Cloud database.
+2. Create Upstash Redis database.
 3. Deploy backend service to Render.
 4. Deploy Next.js frontend to Vercel.
 
@@ -33,11 +33,13 @@ migrate -path internal/store/postgres/migrations -database "$DATABASE_URL" up
 
 3. Validate unique constraints and indexes expected by Phase 3.
 
-## Cache setup (Redis Cloud)
+## Cache setup (Upstash Redis)
 
 1. Capture `REDIS_URL`.
-2. Keep cache disabled until Phase 4 code path is ready.
-3. Enable with fallback behavior validated first.
+2. Prefer the TLS URL (`rediss://...`) from Upstash console.
+3. Keep cache disabled until Phase 4 code path is ready.
+4. Enable with fallback behavior validated first.
+5. With `REDIS_ENABLED=true`, startup performs Redis `PING`; deployment should fail fast if URL/credentials are wrong.
 
 ## Frontend deployment (Vercel)
 

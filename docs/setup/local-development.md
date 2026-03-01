@@ -23,7 +23,12 @@ cat > .env <<'EOF'
 PORT=8080
 BASE_URL=http://localhost:8080
 DATABASE_URL=postgres://<user>:<password>@<host>/<db>?sslmode=require
-REDIS_URL=redis://default:password@<host>:6379
+REDIS_URL=rediss://default:password@<host>:6379
+REDIS_ENABLED=false
+REDIS_POSITIVE_TTL=10m
+REDIS_MISS_TTL=45s
+REDIS_CONNECT_TIMEOUT=3s
+REDIS_OP_TIMEOUT=150ms
 EOF
 ```
 
@@ -95,9 +100,31 @@ migrate -path internal/store/postgres/migrations -database "$DATABASE_URL" down 
 - Example: `postgres://user:pass@host:5432/dbname?sslmode=require`
 
 4. `REDIS_URL`
-- Purpose: reserved for Phase 4 cache integration.
+- Purpose: Redis connection URL (Upstash `rediss://...`) used when cache is enabled.
 
-5. `GIN_MODE`
+5. `REDIS_ENABLED`
+- Purpose: feature flag for Redis cache path.
+- Default: `false`
+- Rule: when `true`, `REDIS_URL` must be set and reachable; startup validates with Redis `PING`.
+
+6. `REDIS_POSITIVE_TTL`
+- Purpose: TTL for positive cache keys.
+- Default: `10m`
+
+7. `REDIS_MISS_TTL`
+- Purpose: TTL for negative cache keys.
+- Default: `45s`
+
+8. `REDIS_CONNECT_TIMEOUT`
+- Purpose: startup connectivity timeout for Redis `PING`.
+- Default: `3s`
+
+9. `REDIS_OP_TIMEOUT`
+- Purpose: per-request Redis operation timeout.
+- Default: `150ms`
+- Backward compatibility: app will use `REDIS_TIMEOUT` when `REDIS_OP_TIMEOUT` is unset.
+
+10. `GIN_MODE`
 - Note: current code calls `gin.SetMode(gin.ReleaseMode)` on startup, so release mode is forced by code.
 - Practical impact: setting `GIN_MODE` alone will not switch runtime mode unless code path changes.
 

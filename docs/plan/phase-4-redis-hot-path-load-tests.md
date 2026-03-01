@@ -28,6 +28,14 @@ Optimize redirect throughput and latency with Redis cache-aside strategy, then v
 5. Keep redirect handler lean and avoid synchronous side tasks.
 6. Keep Postgres as source of truth; Redis failures must fall back to DB path.
 7. Gate Redis path with config (for example `REDIS_ENABLED`) for safe rollback.
+8. Parse and validate cache config from env at startup:
+- `REDIS_ENABLED`
+- `REDIS_URL` (required when enabled)
+- `REDIS_POSITIVE_TTL`
+- `REDIS_MISS_TTL`
+- `REDIS_CONNECT_TIMEOUT`
+- `REDIS_OP_TIMEOUT` (fallback to `REDIS_TIMEOUT` for backward compatibility)
+9. On `REDIS_ENABLED=true`, perform startup Redis connectivity check (`PING`) and fail fast on connection/auth/TLS errors.
 
 ## Runtime and correctness guardrails
 

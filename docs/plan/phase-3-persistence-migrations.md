@@ -8,7 +8,7 @@ Move from in-memory storage to durable Postgres persistence with clean migration
 
 1. Managed Postgres target: `Neon`.
 2. Backend hosting target for API runtime: `Render`.
-3. Cache provider (`Redis Cloud`) is documented now and activated in Phase 4.
+3. Cache provider (`Upstash Redis`) is documented now and activated in Phase 4.
 4. Frontend hosting (`Vercel`) is independent of store migration but part of deployment baseline.
 
 ## Tooling baseline for this phase

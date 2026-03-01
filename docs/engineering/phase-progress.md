@@ -14,7 +14,7 @@ Update it whenever phase scope or completion status changes.
 
 1. Phase 2 (correctness + reliability): `done`
 2. Phase 3 (persistence + migrations): `done`
-3. Phase 4 (Redis hot path + load tests): `planned`
+3. Phase 4 (Redis hot path + load tests): `in_progress`
 4. Phase 5 (auth + profiles + link management): `planned`
 5. Phase 6 (abuse protection + observability + async analytics): `planned`
 6. Phase 7 (performance engineering + deployment hardening): `planned`
@@ -42,6 +42,22 @@ Update it whenever phase scope or completion status changes.
 - Added migration verification integration test flow (`up` from empty schema, `down`, then `up` again).
 - Added safe internal handler logging for unexpected errors while keeping generic client `500` responses.
 - Phase 3 exit criteria are now covered by tests and documented verification flow.
+
+## Phase 4 changelog
+
+1. 2026-03-01 (config scaffold milestone):
+- Added typed Redis env config parsing in `cmd/api/main.go` for:
+  - `REDIS_ENABLED`
+  - `REDIS_POSITIVE_TTL`
+  - `REDIS_MISS_TTL`
+  - `REDIS_CONNECT_TIMEOUT`
+  - `REDIS_OP_TIMEOUT` (with fallback to legacy `REDIS_TIMEOUT`)
+- Added startup validation and fail-fast behavior for invalid cache config.
+- Added unit tests for Redis env parsing behavior.
+2. 2026-03-01 (startup connectivity milestone):
+- Added startup Redis connectivity check (`REDIS_ENABLED=true` -> parse URL + `PING`).
+- Added explicit Postgres and Redis connectivity-pass startup logs.
+- Added startup tests for disabled Redis path and invalid Redis URL handling.
 
 ## What is implemented today
 

@@ -8,6 +8,8 @@
 4. Runtime startup logs include:
 - selected store backend (memory or Postgres)
 - listening port
+- Redis cache mode summary (`enabled/disabled`, TTL values, connect timeout, op timeout)
+- explicit startup connectivity pass logs for Postgres and Redis (when enabled)
 5. Unexpected handler errors are logged internally with operation + request metadata (method/path) while API responses remain generic.
 6. Startup fail-fast behavior for Postgres path:
 - app pings DB at startup when `DATABASE_URL` is set
