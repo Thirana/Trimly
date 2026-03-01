@@ -14,7 +14,7 @@ Update it whenever phase scope or completion status changes.
 
 1. Phase 2 (correctness + reliability): `done`
 2. Phase 3 (persistence + migrations): `done`
-3. Phase 4 (Redis hot path + load tests): `in_progress`
+3. Phase 4 (Redis hot path + load tests): `done`
 4. Phase 5 (auth + profiles + link management): `planned`
 5. Phase 6 (abuse protection + observability + async analytics): `planned`
 6. Phase 7 (performance engineering + deployment hardening): `planned`
@@ -74,6 +74,11 @@ Update it whenever phase scope or completion status changes.
   - cache errors
 - Added periodic cache metrics logs controlled by `CACHE_METRICS_LOG_INTERVAL`.
 - Added k6 redirect baseline script and setup runbook (`scripts/load/redirect_baseline.js`, `docs/setup/load-testing.md`).
+5. 2026-03-01 (completion milestone):
+- Executed Redis-off vs Redis-on redirect load tests with identical parameters (`VUS=20`, `DURATION=20s`).
+- Recorded measured throughput/latency improvements in `docs/engineering/performance-and-load-engineering.md`.
+- Verified rollback path by running full workload with `REDIS_ENABLED=false`.
+- Phase 4 exit criteria are now satisfied and documented.
 
 ## What is implemented today
 
