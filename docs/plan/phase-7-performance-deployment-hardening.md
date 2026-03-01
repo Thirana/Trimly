@@ -56,6 +56,14 @@ Move from feature-complete service to production-hardened system with measurable
 - DB slow/unavailable
 - high error traffic
 3. Validate SLO targets and capture release notes.
+4. Validate cache hot-path command efficiency:
+- no `EXISTS` in redirect read path
+- command sequence remains `GET short` -> `GET miss` on short-key miss
+- `MGET` restricted to non-request batch tooling
+5. Validate Redis reliability safeguards:
+- Redis path can be disabled via config without API behavior drift
+- stampede mitigation behavior under concurrent same-code misses
+- skewed hot-key workload does not collapse latency budgets
 
 ## Risks and mitigations
 

@@ -145,18 +145,22 @@ curl -i -X POST http://localhost:8080/v1/links \
 ## 8) Errors we hit and fixes
 
 1. `.env: parse error near '&'`
+
 - Cause: unquoted URL with `&` during `source .env`.
 - Fix: quote URL values in `.env`.
 
-2. `migrate: command not found`
+1. `migrate: command not found`
+
 - Cause: Go bin directory not in `PATH`.
 - Fix: add `$(go env GOPATH)/bin` to shell `PATH`.
 
-3. `500 internal` on `POST /v1/links` with table confusion
+1. `500 internal` on `POST /v1/links` with table confusion
+
 - Cause pattern: app/CLI pointing to different DB target or schema not migrated in active URL.
 - Fix: verify active target with `psql`, run migration on the same `DATABASE_URL`.
 
-4. `500 internal` after table existed
+1. `500 internal` after table existed
+
 - Root cause in code (fixed): idempotency key used NUL byte separator (`\x00`), Postgres `TEXT` rejects NUL bytes.
 - Fix: changed key format in `internal/store/intent.go` to a Postgres-safe deterministic format.
 
@@ -194,3 +198,4 @@ go run ./cmd/api
 4. `internal/store/postgres/migrations/000001_create_links_table.down.sql`
 5. `internal/store/intent.go`
 6. `docs/plan/phase-3-persistence-migrations.md`
+

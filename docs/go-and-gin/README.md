@@ -7,6 +7,7 @@ It is intentionally implementation-linked, not theory-only.
 
 1. `docs/go-and-gin/go-concepts.md`
 2. `docs/go-and-gin/gin-concepts.md`
+3. `docs/go-and-gin/phase-4-concepts.md`
 
 ## Update rule
 

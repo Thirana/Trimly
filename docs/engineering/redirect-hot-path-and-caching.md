@@ -28,11 +28,21 @@ Define how redirect performance is engineered while preserving correctness.
 ## Phase 4 target architecture
 
 1. Cache-aside flow:
-- `Redis GET(code)` on redirect
-- hit -> redirect immediately
-- miss -> DB lookup -> cache set -> redirect
+- `Redis GET v1:url:short:{code}` on redirect
+- short-key hit -> redirect immediately
+- short-key miss -> `Redis GET v1:url:miss:{code}`
+- miss-key hit -> return `404` immediately
+- both miss -> DB lookup -> cache set -> redirect/404
 2. DB remains source of truth.
 3. Redirect handler remains minimal (no blocking analytics or heavy logic).
+
+## Key format contract (Phase 4)
+
+1. Positive key:
+- `v1:url:short:{code}` -> payload needed for redirect.
+2. Negative key:
+- `v1:url:miss:{code}` -> marker that code is currently unresolved.
+3. `v1` prefix enables future key-schema migration without key collisions.
 
 ## Design rules for hot path
 

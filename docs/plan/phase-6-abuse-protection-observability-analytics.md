@@ -27,6 +27,9 @@ Improve safety and operability with rate limits, observability foundations, and 
 - redirect throughput
 - p95/p99 latency
 - cache hit ratio
+- negative-cache hit ratio
+- Redis timeout/error rate
+- fallback-to-DB rate
 - DB latency
 - error rate
 5. Async analytics:
@@ -39,6 +42,12 @@ Improve safety and operability with rate limits, observability foundations, and 
 1. Add request ID middleware if not present.
 2. Protect debug/profiling endpoints and disable by default in production.
 3. Document SLO-like targets for latency and error rate.
+4. Preserve Phase 4 cache command contract in production ops:
+- redirect hot path remains `GET short` then `GET miss` (no `EXISTS` probe)
+- `MGET` usage stays limited to batch/debug tooling, not request hot path
+5. Track cache hotspot risk in dashboards:
+- monitor top-code traffic skew (hot keys)
+- watch miss bursts that may indicate stampede behavior
 
 ## Testing plan
 

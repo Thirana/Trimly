@@ -18,3 +18,8 @@ The goal is shared context for humans and agents, not exhaustive specs.
 2. Treat each file as implementation intent and acceptance baseline.
 3. Keep changes incremental and verify with tests at each milestone.
 4. Update phase docs when scope or sequencing changes.
+5. Before implementing Phase 4, review `docs/go-and-gin/phase-4-concepts.md` to align on Redis command/key and hot-path correctness rules.
+6. Keep Phase 4 concept alignment across later phases:
+- Phase 4 owns implementation details (keys, command discipline, rollback/fallback)
+- Phase 6 owns production observability signals
+- Phase 7 owns release-hardening validation under failure/skew
