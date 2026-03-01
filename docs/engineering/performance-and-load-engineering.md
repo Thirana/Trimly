@@ -7,13 +7,17 @@ Track how performance claims are validated and which optimizations are accepted.
 ## Current status
 
 1. No formal benchmark suite yet.
-2. No load-test harness committed yet.
-3. Redirect path is still intentionally simple and minimal.
-4. Phase 2 introduced correctness logic mainly on create path:
+2. Initial load-test harness committed:
+- `scripts/load/redirect_baseline.js` (k6 redirect baseline)
+3. Phase 4 cache-aside logic is implemented in redirect resolve path:
+- short-key and miss-key lookups in Redis
+- DB fallback on cache misses/errors
+4. Redirect handler remains intentionally minimal.
+5. Phase 2 introduced correctness logic mainly on create path:
 - idempotency lookup by intent
 - bounded collision retries
 - expiry checks
-5. No performance gain claims are made for Phase 2.
+6. No production performance gain claims are made yet; load tests are still pending.
 
 ## Principles
 

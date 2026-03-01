@@ -17,7 +17,11 @@ Capture the domain rules that make short-link behavior correct, predictable, and
 - redirect target on active link
 - not found for missing code
 - not found for expired code (via domain `ErrExpired`)
-7. Redirect behavior uses `302 Found`.
+7. Redis cache-aside is active when enabled:
+- short-key hit resolves without DB lookup
+- miss-key hit resolves as not found without DB lookup
+- DB remains source of truth on cache misses/errors
+8. Redirect behavior uses `302 Found`.
 
 ## Current code references
 
@@ -42,6 +46,9 @@ Capture the domain rules that make short-link behavior correct, predictable, and
 3. A code is not overwritten on collision; collisions retry with bounded attempts.
 4. Expired links are not redirectable.
 5. Missing and expired redirects are indistinguishable at HTTP level (`404 not_found`).
+6. Cache must never violate lifecycle rules:
+- expired links are never redirectable (even on cache hit)
+- stale miss keys are cleared on create for active codes
 
 ## Testing coverage
 

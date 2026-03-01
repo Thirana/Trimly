@@ -12,6 +12,7 @@ Read in this order for onboarding:
 1. `docs/setup/README.md`
 2. `docs/setup/deployment-targets.md`
 3. `docs/setup/neon-postgres-migration-runbook.md`
-4. `docs/go-and-gin/README.md`
-5. `docs/engineering/README.md`
-6. `docs/plan/README.md`
+4. `docs/setup/load-testing.md`
+5. `docs/go-and-gin/README.md`
+6. `docs/engineering/README.md`
+7. `docs/plan/README.md`

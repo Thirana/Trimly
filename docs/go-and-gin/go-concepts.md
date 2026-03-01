@@ -138,3 +138,38 @@ Why this pattern:
 1. invalid URLs fail at boot, not on first request
 2. misconfigured credentials are detected early
 3. startup logs clearly show dependency readiness
+
+## Interface-based cache injection (no-op default)
+
+`internal/shortener/service.go` now depends on a cache interface (`ResolveCache`) with a no-op default.
+
+Why this pattern:
+
+1. service logic can use caching without hard-coding Redis dependency
+2. local/in-memory runs work without cache infrastructure
+3. tests can inject fake caches to verify hit/miss/fallback behavior deterministically
+
+## Cache-aside in service layer
+
+Resolve flow is implemented in domain/service code instead of HTTP layer:
+
+1. read `short` key
+2. read `miss` key
+3. fallback to store
+4. write back to cache
+
+Why this pattern:
+
+1. keeps HTTP handlers thin
+2. keeps caching policy consistent across all callers of resolve logic
+3. makes key/TTL semantics testable at service level
+
+## Low-overhead counters with `sync/atomic`
+
+`internal/shortener/service.go` tracks resolve-path counters using atomic integers.
+
+Why this pattern:
+
+1. concurrency-safe increments without mutex contention on hot path
+2. cheap enough for redirect-path observability
+3. supports periodic metrics logging without adding external telemetry dependency

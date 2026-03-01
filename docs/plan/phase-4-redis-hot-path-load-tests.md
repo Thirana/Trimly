@@ -11,6 +11,18 @@ Optimize redirect throughput and latency with Redis cache-aside strategy, then v
 3. TTL strategy and cache invalidation policy.
 4. Basic load-test suite and performance baseline.
 
+## Current implementation milestone (2026-03-01)
+
+1. Redis cache adapter added with versioned key format:
+- `v1:url:short:{code}`
+- `v1:url:miss:{code}`
+2. Service resolve flow uses cache-aside:
+- `GET short` -> `GET miss` -> DB fallback
+3. Create flow clears miss key and warms short key.
+4. Runtime toggle + startup fail-fast checks are wired through env config.
+5. Resolve-path counters and periodic cache metrics logs are available for local validation.
+6. Initial k6 redirect baseline script is available for before/after comparisons.
+
 ## Implementation approach
 
 1. Redirect read path:

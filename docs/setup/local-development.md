@@ -29,6 +29,7 @@ REDIS_POSITIVE_TTL=10m
 REDIS_MISS_TTL=45s
 REDIS_CONNECT_TIMEOUT=3s
 REDIS_OP_TIMEOUT=150ms
+CACHE_METRICS_LOG_INTERVAL=30s
 EOF
 ```
 
@@ -124,7 +125,12 @@ migrate -path internal/store/postgres/migrations -database "$DATABASE_URL" down 
 - Default: `150ms`
 - Backward compatibility: app will use `REDIS_TIMEOUT` when `REDIS_OP_TIMEOUT` is unset.
 
-10. `GIN_MODE`
+10. `CACHE_METRICS_LOG_INTERVAL`
+- Purpose: interval for periodic cache metric logs from startup process.
+- Default: `30s`
+- Set `0` to disable.
+
+11. `GIN_MODE`
 - Note: current code calls `gin.SetMode(gin.ReleaseMode)` on startup, so release mode is forced by code.
 - Practical impact: setting `GIN_MODE` alone will not switch runtime mode unless code path changes.
 

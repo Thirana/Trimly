@@ -13,6 +13,9 @@
 - `Save`, `Get`, `FindByIntent`
 - duplicate code/intent unique constraint mapping to domain errors
 - migration verification flow (`up` -> `down` -> `up`)
+7. Redis cache adapter exists for resolve-path optimization:
+- `internal/store/rediscache/cache.go`
+- DB lookup remains authoritative on cache misses/errors
 
 ## Why this is a solid progression
 
@@ -20,6 +23,7 @@
 2. Memory fallback preserves fast local iteration when DB is not required.
 3. Postgres path introduces durable constraints and persistence readiness.
 4. Versioned migrations establish reproducible schema evolution.
+5. Cache remains optional/replaceable via service-level cache interface.
 
 ## Current code references
 
@@ -30,7 +34,8 @@
 5. `internal/store/postgres/migrations/000001_create_links_table.up.sql`
 6. `internal/store/postgres/migrations/000001_create_links_table.down.sql`
 7. `internal/store/postgres/store_integration_test.go`
-8. `cmd/api/main.go`
+8. `internal/store/rediscache/cache.go`
+9. `cmd/api/main.go`
 
 ## Integrity guarantees now covered
 
@@ -43,6 +48,10 @@
 - `ErrIntentExists`
 4. Migration files are verified in tests against an empty isolated schema.
 5. Migration rollback safety is verified via `down` then `up` test flow.
+6. Cache does not redefine persistence truth:
+- create path clears stale miss keys and warms short keys
+- resolve path falls back to DB when cache does not provide a valid answer
+7. Postgres store queries use schema-qualified relations (`public.links`) to avoid `search_path` drift issues when using managed poolers.
 
 ## Remaining persistence work beyond Phase 3
 

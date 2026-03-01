@@ -20,6 +20,7 @@ import (
 	"github.com/thirana/url-shortener/internal/shortener"
 	"github.com/thirana/url-shortener/internal/store"
 	storepostgres "github.com/thirana/url-shortener/internal/store/postgres"
+	"github.com/thirana/url-shortener/internal/store/rediscache"
 )
 
 func main() {
@@ -40,7 +41,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("invalid redis config: %v", err)
 	}
-	closeRedis, err := buildRedis(redisCfg)
+	resolveCache, closeRedis, err := buildRedis(redisCfg)
 	if err != nil {
 		log.Fatalf("failed to initialize redis: %v", err)
 	}
@@ -51,6 +52,8 @@ func main() {
 	}
 
 	svc := shortener.NewService(linkStore)
+	svc.SetResolveCache(resolveCache, redisCfg.PositiveTTL, redisCfg.MissTTL)
+	stopCacheMetrics := startCacheMetricsLogger(svc, redisCfg.Enabled, redisCfg.MetricsLogInterval)
 	links := httpapi.NewLinksHandler(svc)
 	router := httpapi.NewRouter(links)
 
@@ -90,6 +93,7 @@ func main() {
 	if err := closeRedis(); err != nil {
 		log.Printf("redis close failed: %v", err)
 	}
+	stopCacheMetrics()
 }
 
 func buildStore() (store.LinkStore, func() error, error) {
@@ -120,19 +124,21 @@ func buildStore() (store.LinkStore, func() error, error) {
 }
 
 type redisConfig struct {
-	Enabled        bool
-	URL            string
-	PositiveTTL    time.Duration
-	MissTTL        time.Duration
-	ConnectTimeout time.Duration
-	OpTimeout      time.Duration
+	Enabled            bool
+	URL                string
+	PositiveTTL        time.Duration
+	MissTTL            time.Duration
+	ConnectTimeout     time.Duration
+	OpTimeout          time.Duration
+	MetricsLogInterval time.Duration
 }
 
 const (
-	defaultRedisPositiveTTL    = 10 * time.Minute
-	defaultRedisMissTTL        = 45 * time.Second
-	defaultRedisConnectTimeout = 3 * time.Second
-	defaultRedisOpTimeout      = 150 * time.Millisecond
+	defaultRedisPositiveTTL        = 10 * time.Minute
+	defaultRedisMissTTL            = 45 * time.Second
+	defaultRedisConnectTimeout     = 3 * time.Second
+	defaultRedisOpTimeout          = 150 * time.Millisecond
+	defaultCacheMetricsLogInterval = 30 * time.Second
 )
 
 func loadRedisConfig() (redisConfig, error) {
@@ -157,14 +163,19 @@ func loadRedisConfig() (redisConfig, error) {
 	if err != nil {
 		return redisConfig{}, err
 	}
+	metricsLogInterval, err := durationFromEnv("CACHE_METRICS_LOG_INTERVAL", defaultCacheMetricsLogInterval)
+	if err != nil {
+		return redisConfig{}, err
+	}
 
 	cfg := redisConfig{
-		Enabled:        enabled,
-		URL:            strings.TrimSpace(os.Getenv("REDIS_URL")),
-		PositiveTTL:    positiveTTL,
-		MissTTL:        missTTL,
-		ConnectTimeout: connectTimeout,
-		OpTimeout:      opTimeout,
+		Enabled:            enabled,
+		URL:                strings.TrimSpace(os.Getenv("REDIS_URL")),
+		PositiveTTL:        positiveTTL,
+		MissTTL:            missTTL,
+		ConnectTimeout:     connectTimeout,
+		OpTimeout:          opTimeout,
+		MetricsLogInterval: metricsLogInterval,
 	}
 
 	if cfg.PositiveTTL <= 0 {
@@ -178,6 +189,9 @@ func loadRedisConfig() (redisConfig, error) {
 	}
 	if cfg.OpTimeout <= 0 {
 		return redisConfig{}, fmt.Errorf("REDIS_OP_TIMEOUT must be > 0")
+	}
+	if cfg.MetricsLogInterval < 0 {
+		return redisConfig{}, fmt.Errorf("CACHE_METRICS_LOG_INTERVAL must be >= 0")
 	}
 	if cfg.Enabled && cfg.URL == "" {
 		return redisConfig{}, fmt.Errorf("REDIS_URL must be set when REDIS_ENABLED=true")
@@ -232,24 +246,25 @@ func logRedisConfig(cfg redisConfig) {
 	}
 
 	log.Printf(
-		"redis cache enabled positive_ttl=%s miss_ttl=%s connect_timeout=%s op_timeout=%s",
+		"redis cache enabled positive_ttl=%s miss_ttl=%s connect_timeout=%s op_timeout=%s metrics_log_interval=%s",
 		cfg.PositiveTTL,
 		cfg.MissTTL,
 		cfg.ConnectTimeout,
 		cfg.OpTimeout,
+		cfg.MetricsLogInterval,
 	)
 }
 
-func buildRedis(cfg redisConfig) (func() error, error) {
+func buildRedis(cfg redisConfig) (shortener.ResolveCache, func() error, error) {
 	logRedisConfig(cfg)
 
 	if !cfg.Enabled {
-		return func() error { return nil }, nil
+		return nil, func() error { return nil }, nil
 	}
 
 	opts, err := redis.ParseURL(cfg.URL)
 	if err != nil {
-		return nil, fmt.Errorf("parse REDIS_URL: %w", err)
+		return nil, nil, fmt.Errorf("parse REDIS_URL: %w", err)
 	}
 	opts.DialTimeout = cfg.ConnectTimeout
 	opts.ReadTimeout = cfg.OpTimeout
@@ -262,9 +277,46 @@ func buildRedis(cfg redisConfig) (func() error, error) {
 
 	if err := client.Ping(ctx).Err(); err != nil {
 		_ = client.Close()
-		return nil, fmt.Errorf("ping redis: %w", err)
+		return nil, nil, fmt.Errorf("ping redis: %w", err)
 	}
 
 	log.Printf("redis connectivity check passed")
-	return client.Close, nil
+	return rediscache.New(client, cfg.OpTimeout), client.Close, nil
+}
+
+func startCacheMetricsLogger(svc *shortener.Service, redisEnabled bool, interval time.Duration) func() {
+	if !redisEnabled {
+		return func() {}
+	}
+	if interval <= 0 {
+		log.Printf("cache metrics logger disabled (CACHE_METRICS_LOG_INTERVAL=%s)", interval)
+		return func() {}
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	ticker := time.NewTicker(interval)
+	log.Printf("cache metrics logger enabled interval=%s", interval)
+
+	go func() {
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				m := svc.ResolveMetricsSnapshot()
+				log.Printf(
+					"cache_metrics short_hit=%d miss_hit=%d db_fallback=%d db_hit=%d db_miss=%d cache_error=%d",
+					m.CacheShortHits,
+					m.CacheMissHits,
+					m.DBFallbacks,
+					m.DBHits,
+					m.DBMisses,
+					m.CacheErrors,
+				)
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	return cancel
 }

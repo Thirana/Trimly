@@ -36,7 +36,7 @@ func (s *Store) Close() {
 func (s *Store) Save(ctx context.Context, link store.Link) error {
 	_, err := s.pool.Exec(
 		ctx,
-		`INSERT INTO links (code, original_url, expires_at, intent_key)
+		`INSERT INTO public.links (code, original_url, expires_at, intent_key)
 		 VALUES ($1, $2, $3, $4)`,
 		link.Code,
 		link.LongURL,
@@ -55,7 +55,7 @@ func (s *Store) Get(ctx context.Context, code string) (store.Link, bool, error) 
 
 	err := s.pool.QueryRow(
 		ctx,
-		`SELECT code, original_url, expires_at FROM links WHERE code = $1`,
+		`SELECT code, original_url, expires_at FROM public.links WHERE code = $1`,
 		code,
 	).Scan(&link.Code, &link.LongURL, &expiresAt)
 	if err != nil {
@@ -76,7 +76,7 @@ func (s *Store) FindByIntent(ctx context.Context, longURL string, expiresAt *tim
 	err := s.pool.QueryRow(
 		ctx,
 		`SELECT code, original_url, expires_at
-		 FROM links
+		 FROM public.links
 		 WHERE intent_key = $1`,
 		store.BuildIntentKey(longURL, expiresAt),
 	).Scan(&link.Code, &link.LongURL, &foundExpiresAt)

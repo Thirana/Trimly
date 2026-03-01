@@ -47,6 +47,11 @@ This matrix defines runtime configuration for local and cloud environments.
 - Default: `150ms`.
 - Backward compatibility: if unset, app falls back to `REDIS_TIMEOUT` when present.
 
+11. `CACHE_METRICS_LOG_INTERVAL`
+- Interval for periodic cache metrics log snapshots (`cache_metrics ...`).
+- Default: `30s`.
+- Set `0` to disable periodic cache metrics logs.
+
 ## Frontend (Next.js)
 
 1. `NEXT_PUBLIC_API_BASE_URL`
@@ -80,6 +85,7 @@ REDIS_POSITIVE_TTL=10m
 REDIS_MISS_TTL=45s
 REDIS_CONNECT_TIMEOUT=3s
 REDIS_OP_TIMEOUT=150ms
+CACHE_METRICS_LOG_INTERVAL=30s
 ```
 
 ## Example frontend `.env.local`

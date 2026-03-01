@@ -13,6 +13,7 @@ func TestLoadRedisConfig_Defaults(t *testing.T) {
 	t.Setenv("REDIS_CONNECT_TIMEOUT", "")
 	t.Setenv("REDIS_OP_TIMEOUT", "")
 	t.Setenv("REDIS_TIMEOUT", "")
+	t.Setenv("CACHE_METRICS_LOG_INTERVAL", "")
 
 	cfg, err := loadRedisConfig()
 	if err != nil {
@@ -34,6 +35,9 @@ func TestLoadRedisConfig_Defaults(t *testing.T) {
 	if cfg.OpTimeout != defaultRedisOpTimeout {
 		t.Fatalf("OpTimeout = %v, want %v", cfg.OpTimeout, defaultRedisOpTimeout)
 	}
+	if cfg.MetricsLogInterval != defaultCacheMetricsLogInterval {
+		t.Fatalf("MetricsLogInterval = %v, want %v", cfg.MetricsLogInterval, defaultCacheMetricsLogInterval)
+	}
 }
 
 func TestLoadRedisConfig_CustomValues(t *testing.T) {
@@ -43,6 +47,7 @@ func TestLoadRedisConfig_CustomValues(t *testing.T) {
 	t.Setenv("REDIS_MISS_TTL", "30s")
 	t.Setenv("REDIS_CONNECT_TIMEOUT", "3s")
 	t.Setenv("REDIS_OP_TIMEOUT", "200ms")
+	t.Setenv("CACHE_METRICS_LOG_INTERVAL", "10s")
 
 	cfg, err := loadRedisConfig()
 	if err != nil {
@@ -66,6 +71,9 @@ func TestLoadRedisConfig_CustomValues(t *testing.T) {
 	}
 	if got, want := cfg.OpTimeout.String(), "200ms"; got != want {
 		t.Fatalf("OpTimeout = %s, want %s", got, want)
+	}
+	if got, want := cfg.MetricsLogInterval.String(), "10s"; got != want {
+		t.Fatalf("MetricsLogInterval = %s, want %s", got, want)
 	}
 }
 
@@ -113,8 +121,18 @@ func TestLoadRedisConfig_InvalidDuration(t *testing.T) {
 	}
 }
 
+func TestLoadRedisConfig_InvalidMetricsInterval(t *testing.T) {
+	t.Setenv("REDIS_ENABLED", "false")
+	t.Setenv("CACHE_METRICS_LOG_INTERVAL", "-1s")
+
+	_, err := loadRedisConfig()
+	if err == nil {
+		t.Fatalf("expected error for invalid CACHE_METRICS_LOG_INTERVAL")
+	}
+}
+
 func TestBuildRedis_Disabled(t *testing.T) {
-	closeFn, err := buildRedis(redisConfig{
+	cache, closeFn, err := buildRedis(redisConfig{
 		Enabled:        false,
 		PositiveTTL:    defaultRedisPositiveTTL,
 		MissTTL:        defaultRedisMissTTL,
@@ -123,6 +141,9 @@ func TestBuildRedis_Disabled(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("buildRedis returned error: %v", err)
+	}
+	if cache != nil {
+		t.Fatalf("cache = %v, want nil when redis disabled", cache)
 	}
 	if closeFn == nil {
 		t.Fatalf("closeFn is nil")
@@ -133,7 +154,7 @@ func TestBuildRedis_Disabled(t *testing.T) {
 }
 
 func TestBuildRedis_InvalidURL(t *testing.T) {
-	_, err := buildRedis(redisConfig{
+	_, _, err := buildRedis(redisConfig{
 		Enabled:        true,
 		URL:            "not-a-redis-url",
 		PositiveTTL:    defaultRedisPositiveTTL,

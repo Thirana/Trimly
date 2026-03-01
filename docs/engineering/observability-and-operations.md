@@ -10,14 +10,17 @@
 - listening port
 - Redis cache mode summary (`enabled/disabled`, TTL values, connect timeout, op timeout)
 - explicit startup connectivity pass logs for Postgres and Redis (when enabled)
-5. Unexpected handler errors are logged internally with operation + request metadata (method/path) while API responses remain generic.
-6. Startup fail-fast behavior for Postgres path:
+5. Periodic cache metrics logs are emitted when Redis cache is enabled:
+- `cache_metrics short_hit=<n> miss_hit=<n> db_fallback=<n> db_hit=<n> db_miss=<n> cache_error=<n>`
+- interval controlled by `CACHE_METRICS_LOG_INTERVAL` (`0` disables)
+6. Unexpected handler errors are logged internally with operation + request metadata (method/path) while API responses remain generic.
+7. Startup fail-fast behavior for Postgres path:
 - app pings DB at startup when `DATABASE_URL` is set
 - startup exits on ping failure
-7. Local env auto-load behavior:
+8. Local env auto-load behavior:
 - app attempts to load `.env` on startup via `godotenv`
 - shell/cloud-provided env vars still have precedence
-8. Graceful shutdown is implemented with signal handling and timeout-based HTTP shutdown.
+9. Graceful shutdown is implemented with signal handling and timeout-based HTTP shutdown.
 
 ## Current code references
 

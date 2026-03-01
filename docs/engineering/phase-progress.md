@@ -58,6 +58,22 @@ Update it whenever phase scope or completion status changes.
 - Added startup Redis connectivity check (`REDIS_ENABLED=true` -> parse URL + `PING`).
 - Added explicit Postgres and Redis connectivity-pass startup logs.
 - Added startup tests for disabled Redis path and invalid Redis URL handling.
+3. 2026-03-01 (cache-aside core flow milestone):
+- Added service-level cache abstraction (`ResolveCache`) with no-op fallback.
+- Added Redis cache adapter implementing:
+  - `v1:url:short:{code}`
+  - `v1:url:miss:{code}`
+- Wired cache into service resolve path (`GET short` -> `GET miss` -> DB fallback).
+- Added create-path miss-key invalidation and positive-key warming.
+- Added service tests for cache-hit, miss-hit, DB fallback, TTL clamping, and create-path cache updates.
+4. 2026-03-01 (observability + baseline load milestone):
+- Added atomic resolve-path cache counters:
+  - short-key hits
+  - miss-key hits
+  - DB fallbacks/hits/misses
+  - cache errors
+- Added periodic cache metrics logs controlled by `CACHE_METRICS_LOG_INTERVAL`.
+- Added k6 redirect baseline script and setup runbook (`scripts/load/redirect_baseline.js`, `docs/setup/load-testing.md`).
 
 ## What is implemented today
 
@@ -67,7 +83,8 @@ Update it whenever phase scope or completion status changes.
 - `GET /:code`
 2. Storage implementations:
 - in-memory store
-- Postgres store skeleton (enabled when `DATABASE_URL` is set)
+- Postgres store (enabled when `DATABASE_URL` is set)
+- Redis resolve-cache adapter (enabled when `REDIS_ENABLED=true`)
 3. URL validation + normalization in service layer.
 4. Stable JSON error envelope and domain error mapping.
 5. Random URL-safe short-code generation with collision retries.
