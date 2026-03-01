@@ -13,7 +13,7 @@ Update it whenever phase scope or completion status changes.
 ## Phase status
 
 1. Phase 2 (correctness + reliability): `done`
-2. Phase 3 (persistence + migrations): `in_progress`
+2. Phase 3 (persistence + migrations): `done`
 3. Phase 4 (Redis hot path + load tests): `planned`
 4. Phase 5 (auth + profiles + link management): `planned`
 5. Phase 6 (abuse protection + observability + async analytics): `planned`
@@ -37,6 +37,11 @@ Update it whenever phase scope or completion status changes.
 - Added `DATABASE_URL`-driven runtime store selection (Postgres or in-memory fallback).
 - Added startup DB ping fail-fast and graceful shutdown wiring in `cmd/api/main.go`.
 - Refactored router wiring so dependency composition happens in `cmd/api`.
+2. 2026-03-01 (completion milestone):
+- Added Postgres integration tests for `Save`, `Get`, `FindByIntent`, and unique constraint error mapping.
+- Added migration verification integration test flow (`up` from empty schema, `down`, then `up` again).
+- Added safe internal handler logging for unexpected errors while keeping generic client `500` responses.
+- Phase 3 exit criteria are now covered by tests and documented verification flow.
 
 ## What is implemented today
 

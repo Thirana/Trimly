@@ -8,13 +8,14 @@
 4. Runtime startup logs include:
 - selected store backend (memory or Postgres)
 - listening port
-5. Startup fail-fast behavior for Postgres path:
+5. Unexpected handler errors are logged internally with operation + request metadata (method/path) while API responses remain generic.
+6. Startup fail-fast behavior for Postgres path:
 - app pings DB at startup when `DATABASE_URL` is set
 - startup exits on ping failure
-6. Local env auto-load behavior:
+7. Local env auto-load behavior:
 - app attempts to load `.env` on startup via `godotenv`
 - shell/cloud-provided env vars still have precedence
-7. Graceful shutdown is implemented with signal handling and timeout-based HTTP shutdown.
+8. Graceful shutdown is implemented with signal handling and timeout-based HTTP shutdown.
 
 ## Current code references
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -19,6 +20,24 @@ type errorResponse struct {
 		Code    string `json:"code"`
 		Message string `json:"message"`
 	} `json:"error"`
+}
+
+type failingStore struct {
+	saveErr      error
+	getErr       error
+	findByIntent error
+}
+
+func (s *failingStore) Save(_ context.Context, _ store.Link) error {
+	return s.saveErr
+}
+
+func (s *failingStore) Get(_ context.Context, _ string) (store.Link, bool, error) {
+	return store.Link{}, false, s.getErr
+}
+
+func (s *failingStore) FindByIntent(_ context.Context, _ string, _ *time.Time) (store.Link, bool, error) {
+	return store.Link{}, false, s.findByIntent
 }
 
 func testRouterWithService(svc *shortener.Service) *gin.Engine {
@@ -174,5 +193,70 @@ func TestRedirect_ExpiredLinkReturns404(t *testing.T) {
 	}
 	if resp.Error.Code != "not_found" {
 		t.Fatalf("error.code = %q, want %q", resp.Error.Code, "not_found")
+	}
+}
+
+func TestCreateLink_UnexpectedErrorReturnsGeneric500(t *testing.T) {
+	t.Parallel()
+
+	gin.SetMode(gin.TestMode)
+
+	svc := shortener.NewService(&failingStore{
+		findByIntent: errors.New("db unavailable"),
+	})
+	r := testRouterWithService(svc)
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/v1/links",
+		bytes.NewReader([]byte(`{"long_url":"https://example.com/path"}`)),
+	)
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusInternalServerError)
+	}
+
+	var resp errorResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode error response: %v", err)
+	}
+	if resp.Error.Code != "internal" {
+		t.Fatalf("error.code = %q, want %q", resp.Error.Code, "internal")
+	}
+	if resp.Error.Message != "something went wrong" {
+		t.Fatalf("error.message = %q, want %q", resp.Error.Message, "something went wrong")
+	}
+}
+
+func TestRedirect_UnexpectedErrorReturnsGeneric500(t *testing.T) {
+	t.Parallel()
+
+	gin.SetMode(gin.TestMode)
+
+	svc := shortener.NewService(&failingStore{
+		getErr: errors.New("db unavailable"),
+	})
+	r := testRouterWithService(svc)
+
+	req := httptest.NewRequest(http.MethodGet, "/boom", nil)
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusInternalServerError)
+	}
+
+	var resp errorResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode error response: %v", err)
+	}
+	if resp.Error.Code != "internal" {
+		t.Fatalf("error.code = %q, want %q", resp.Error.Code, "internal")
+	}
+	if resp.Error.Message != "something went wrong" {
+		t.Fatalf("error.message = %q, want %q", resp.Error.Message, "something went wrong")
 	}
 }

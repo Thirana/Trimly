@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"log"
 	"net/http"
 	"os"
 
@@ -28,6 +29,7 @@ func (h *LinksHandler) Create(c *gin.Context) {
 		if mapCreateDomainError(c, err) {
 			return
 		}
+		logUnexpectedError(c, "create_link", err)
 		jsonError(c, http.StatusInternalServerError, "internal", "something went wrong")
 		return
 	}
@@ -65,6 +67,7 @@ func (h *LinksHandler) Redirect(c *gin.Context) {
 		if mapResolveDomainError(c, err) {
 			return
 		}
+		logUnexpectedError(c, "resolve_link", err)
 		jsonError(c, http.StatusInternalServerError, "internal", "something went wrong")
 		return
 	}
@@ -72,4 +75,12 @@ func (h *LinksHandler) Redirect(c *gin.Context) {
 	// For now choose 302 Temporary Redirect.
 	// net/http documents standard redirect codes; we can choose 301/308 later for “permanent”. ([pkg.go.dev/net/http](https://pkg.go.dev/net/http?utm_source=chatgpt.com))
 	c.Redirect(http.StatusFound, link.LongURL)
+}
+
+func logUnexpectedError(c *gin.Context, op string, err error) {
+	path := c.FullPath()
+	if path == "" {
+		path = c.Request.URL.Path
+	}
+	log.Printf("unexpected handler error op=%s method=%s path=%s err=%v", op, c.Request.Method, path, err)
 }

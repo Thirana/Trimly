@@ -27,6 +27,12 @@ Move from in-memory storage to durable Postgres persistence with clean migration
 4. Added startup DB ping fail-fast and graceful shutdown wiring.
 5. Added local `.env` auto-loading via `godotenv`.
 
+## Completion milestone (2026-03-01)
+
+1. Added Postgres integration tests for `Save`, `Get`, `FindByIntent`, and unique constraint mapping.
+2. Added migration verification integration flow (`up` from empty schema, `down`, then `up`).
+3. Added safe internal handler logging for unexpected errors with generic client `500` responses.
+
 ## Scope
 
 1. Postgres-backed link store implementation.

@@ -4,11 +4,15 @@
 
 1. `LinkStore` interface decouples business logic from storage backend.
 2. `MemoryStore` remains available for local/no-DB runs.
-3. Postgres store skeleton now exists in `internal/store/postgres`.
-4. Initial SQL migration scaffold exists in `internal/store/postgres/migrations`.
+3. Postgres store implementation exists in `internal/store/postgres`.
+4. Versioned SQL migrations exist in `internal/store/postgres/migrations`.
 5. Runtime store selection is environment-driven:
 - `DATABASE_URL` set -> Postgres path
 - `DATABASE_URL` unset -> in-memory path
+6. Postgres integration tests now cover:
+- `Save`, `Get`, `FindByIntent`
+- duplicate code/intent unique constraint mapping to domain errors
+- migration verification flow (`up` -> `down` -> `up`)
 
 ## Why this is a solid progression
 
@@ -25,7 +29,8 @@
 4. `internal/store/postgres/store.go`
 5. `internal/store/postgres/migrations/000001_create_links_table.up.sql`
 6. `internal/store/postgres/migrations/000001_create_links_table.down.sql`
-7. `cmd/api/main.go`
+7. `internal/store/postgres/store_integration_test.go`
+8. `cmd/api/main.go`
 
 ## Integrity guarantees now covered
 
@@ -36,13 +41,13 @@
 3. Store-level duplicate writes map to explicit app errors:
 - `ErrCodeExists`
 - `ErrIntentExists`
+4. Migration files are verified in tests against an empty isolated schema.
+5. Migration rollback safety is verified via `down` then `up` test flow.
 
-## Remaining Phase 3 work
+## Remaining persistence work beyond Phase 3
 
-1. Add integration tests against disposable Postgres.
-2. Add migration verification tests (`up` from empty DB and rollback safety).
-3. Decide when to make Postgres the default runtime path for all environments.
-4. Add stronger update semantics (`updated_at` maintenance) when write/update flows expand.
+1. Decide when to make Postgres the default runtime path for all environments.
+2. Add stronger update semantics (`updated_at` maintenance) when write/update flows expand.
 
 ## Staff-level practice to keep
 

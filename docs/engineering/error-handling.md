@@ -27,6 +27,7 @@
 - unknown errors -> `500 internal`
 
 5. Binder failures still return `400 bad_request` with binder message.
+6. Unexpected handler/store errors are logged internally with operation + request metadata while client responses remain generic.
 
 6. Common JSON formatting is centralized via `jsonError`.
 
@@ -48,3 +49,4 @@
 1. Keep domain errors transport-agnostic.
 2. Keep HTTP mapping stable and explicit.
 3. Avoid leaking internals in `5xx` responses.
+4. Log unexpected failures with enough context for debugging, without exposing sensitive data to clients.

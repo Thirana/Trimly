@@ -93,3 +93,21 @@ Service uses bounded collision retries and injectable functions for testability:
 
 1. In-memory store uses `sync.RWMutex` around maps.
 2. Postgres store relies on DB constraints and transactional write behavior.
+
+## Integration tests with conditional execution
+
+`internal/store/postgres/store_integration_test.go` uses environment-aware integration tests:
+
+1. Tests read `DATABASE_URL`.
+2. If not set, tests call `t.Skip(...)` instead of failing unit-test runs.
+3. This keeps `go test ./...` usable for contributors without a DB.
+
+## Schema-isolated Postgres integration testing
+
+Postgres integration tests create a temporary schema per test and set `search_path` on connections.
+
+Why this pattern:
+
+1. Avoids polluting shared tables.
+2. Allows migration verification (`up` -> `down` -> `up`) safely.
+3. Keeps tests repeatable even against a managed DB target.

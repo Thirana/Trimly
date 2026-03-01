@@ -190,12 +190,27 @@ psql "$DATABASE_URL" -c "\dt"
 go run ./cmd/api
 ```
 
+## 10) Integration test flow for Phase 3 completion
+
+Postgres integration tests were added under `internal/store/postgres/store_integration_test.go`.
+They run against `DATABASE_URL` and create isolated temporary schemas, so they do not mutate your app tables.
+
+Run:
+
+```bash
+go test ./internal/store/postgres -run TestStore
+go test ./internal/store/postgres -run TestMigrations_UpDownUp
+go test ./...
+```
+
+If `DATABASE_URL` is not set, Postgres integration tests are skipped.
+
 ## Related files in this repo
 
 1. `cmd/api/main.go`
 2. `internal/store/postgres/store.go`
 3. `internal/store/postgres/migrations/000001_create_links_table.up.sql`
 4. `internal/store/postgres/migrations/000001_create_links_table.down.sql`
-5. `internal/store/intent.go`
-6. `docs/plan/phase-3-persistence-migrations.md`
-
+5. `internal/store/postgres/store_integration_test.go`
+6. `internal/store/intent.go`
+7. `docs/plan/phase-3-persistence-migrations.md`
